@@ -37,7 +37,7 @@ WiFiMulti WiFiMulti;
 
 int count=0;
 int login=0;
-
+uint8_t recv_index = 0x12;
 void setup() {
     M5.begin(true, false, true);  // Init Atom(Initialize serial port, LED).
                                   // 初始化 ATOM(初始化串口、LED)
@@ -65,7 +65,7 @@ void setup() {
 
 void loop() {
   WiFiClient client;
-  if (login=0){
+  if (login == 0){
     String login_line;
     login_line = "login,"+hokuren_userid+","+hokuren_password+","+hokuren_version;
     if(!client.connect(hokuren_server,hokuren_loginport)){
@@ -77,6 +77,8 @@ void loop() {
     Serial.println(line);
     client.stop();
     login++;
+    String login_message = client.readStringUntil('\r');
+    Serial.println(login_message);
   }
     if (!client.connect(
             hokuren_server,
@@ -88,26 +90,14 @@ void loop() {
         return;
     }
     client.print(hokuren_userid+","+hokuren_port+",NORMAL\\"); 
-    int maxloops = 0;
-
-    // wait for the server's reply to become available
-    //等待服务器的回复
-    while (!client.available() && maxloops < 1000) {
-        maxloops++;
-        delay(1);  // delay 1 msec
-    }
-    while (client.available())
-         {
-          String line = client.readStringUntil('\r');
-          Serial2.println(line);
-    }
-    
-   // Serial.println("Closing connection.");
-    //client.stop();
-    //Serial.println("Waiting 5 seconds before restarting...");
-    //Serial.println(hokuren_userid+","+hokuren_port+",NORMAL\\");
-    //delay(5000);
+    Packetizer::subscribe(client, recv_index,
+        [&](const uint8_t* data, const size_t size){
+            for (size_t i=0;i <size; ++i)
+              Serial2.print(data[i]);
+          }
+        );
     Serial.println(count);
     count++;
-    //delay(1000);
+    client.stop();
+    delay(1000);
 }
