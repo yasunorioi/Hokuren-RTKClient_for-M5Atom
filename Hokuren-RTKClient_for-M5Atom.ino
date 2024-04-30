@@ -16,7 +16,7 @@
 #include <M5Atom.h>
 #include <WiFi.h>
 #include <WiFiMulti.h>
-#include <Packetizer.h> // https://github.com/hideakitai/Packetizer
+//#include <Packetizer.h> // https://github.com/hideakitai/Packetizer
 
 #include "Config.h"
 
@@ -34,6 +34,7 @@ String hokuren_version = HOKUREN_VERSION;
 const char *password = "chaylan22";
 */
 WiFiMulti WiFiMulti;
+
 
 int count=0;
 int login=0;
@@ -82,22 +83,28 @@ void loop() {
   }
     if (!client.connect(
             hokuren_server,
-            hokuren_port)) {  // Connect to the server. 0 is returned if the
-                      // connection fails. 连接服务器,若连接失败返回0
+            hokuren_port)) {  
         Serial.println("Data Connection failed.");
-
         delay(5000);
         return;
     }
     client.print(hokuren_userid+","+hokuren_port+",NORMAL\\"); 
-    Packetizer::subscribe(client, recv_index,
-        [&](const uint8_t* data, const size_t size){
-            for (size_t i=0;i <size; ++i)
-              Serial2.print(data[i]);
-          }
-        );
+    int maxloops = 10;
+    while (!client.available() && maxloops < 1000) {
+        maxloops++;
+        delay(1);  // delay 1 msec
+    }
+    
+    while (client.available() > 0 ){
+      String c = client.readStringUntil('\r');
+      Serial2.print(c);
+//      unsigned long start_time = millis();
+//      unsigned long wait_time = millis();
+    }
+    
+    //  char ch = client.read();    
     Serial.println(count);
     count++;
     client.stop();
-    delay(1000);
+    //delay(1000);
 }
