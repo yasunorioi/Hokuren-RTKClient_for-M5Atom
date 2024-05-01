@@ -1,18 +1,3 @@
-/*
-*******************************************************************************
-* Copyright (c) 2021 by M5Stack
-*                  Equipped with Atom-Lite/Matrix sample source code
-*                          配套  Atom-Lite/Matrix 示例源代码
-* Visit for more information: https://docs.m5stack.com/en/products
-* 获取更多资料请访问：https://docs.m5stack.com/zh_CN/products
-*
-* Describe: WIFI TCP.
-* Date: 2021/7/29
-*******************************************************************************
-  M5Atom will sends a message to a TCP server
-  M5Atom 将向TCP服务器发送一条数据
-*/
-
 #include <M5Atom.h>
 #include <WiFi.h>
 #include <WiFiMulti.h>
@@ -29,13 +14,8 @@ String  hokuren_password = HOKUREN_PASSWORD;
 const char* hokuren_server = HOKUREN_SERVER;
 const uint16_t hokuren_loginport = HOKUREN_LOGINPORT;
 String hokuren_version = HOKUREN_VERSION;
-// Set the name and password of the wifi to be connected.
-// 配置所连接wifi的名称和密码
-/* const char *ssid     = "";
-const char *password = "chaylan22";
-*/
-WiFiMulti WiFiMulti;
 
+WiFiMulti WiFiMulti;
 
 int count=0;
 int login=0;
