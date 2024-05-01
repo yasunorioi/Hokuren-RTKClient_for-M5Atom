@@ -16,7 +16,8 @@
 #include <M5Atom.h>
 #include <WiFi.h>
 #include <WiFiMulti.h>
-//#include <Packetizer.h> // https://github.com/hideakitai/Packetizer
+//#include <SparkFun_u-blox_GNSS_Arduino_Library.h>
+//SFE_UBLOX_GNSS myGNSS;
 
 #include "Config.h"
 
@@ -40,27 +41,22 @@ int count=0;
 int login=0;
 uint8_t recv_index = 0x12;
 void setup() {
-    M5.begin(true, false, true);  // Init Atom(Initialize serial port, LED).
-                                  // 初始化 ATOM(初始化串口、LED)
+    M5.begin(true, false, true);  
     Serial2.begin(115200, SERIAL_8N1, 22, 19);
-    WiFiMulti.addAP(
-        ssid,
-        password);  // Add wifi configuration information.  添加wifi配置信息
-    Serial.print(
-        "\nWaiting connect to WiFi...");  // Serial port output format string.
-                                          // 串口输出格式化字符串
-    M5.dis.fillpix(0xff0000);  // Make the LED light show red.  使led灯显示红色
-    while (WiFiMulti.run() !=
-           WL_CONNECTED) {  // If the connection to wifi is not established
-                            // successfully.  如果没有与wifi成功建立连接
+    pinMode(0,OUTPUT);
+    digitalWrite(0,LOW);
+    
+    WiFiMulti.addAP( ssid, password);  
+    Serial.print( "\nWaiting connect to WiFi...");  
+    M5.dis.fillpix(0xff0000);  
+    while (WiFiMulti.run() !=  WL_CONNECTED) {  
         Serial.print(".");
         delay(300);
     }
-    M5.dis.fillpix(0x00ff00);  // Make the LED light green.  使led灯显示绿色
+    M5.dis.fillpix(0x00ff00);  
     Serial.println("\nWiFi connected");
     Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());  // The serial port outputs the IP address
-                                     // of the M5Atom.  串口输出M5Atom的IP地址
+    Serial.println(WiFi.localIP());  
     delay(500);    
 }
 
@@ -89,22 +85,31 @@ void loop() {
         return;
     }
     client.print(hokuren_userid+","+hokuren_port+",NORMAL\\"); 
-    int maxloops = 10;
-    while (!client.available() && maxloops < 1000) {
+    
+    int maxloops = 1600;
+    while (!client.available() && maxloops < 1700) {
         maxloops++;
-        delay(1);  // delay 1 msec
+        delay(1);  
     }
     
     while (client.available() > 0 ){
       String c = client.readStringUntil('\r');
       Serial2.print(c);
-//      unsigned long start_time = millis();
-//      unsigned long wait_time = millis();
     }
-    
-    //  char ch = client.read();    
+/*    size_t RTCM_Count = 0;
+    uint8_t RTCM_Data[512 *4];
+    while ( client.avalable()) {
+      RTCM_Data[RTCM_Count++] = client.read();
+      if (RTCM_Count == sizeof(RTCM_Data)){
+        RTCM_Count = 0;
+        break;
+      }
+    }
+    */
+    Serial2.flush();
+    client.stop();
+ 
     Serial.println(count);
     count++;
-    client.stop();
     //delay(1000);
 }
