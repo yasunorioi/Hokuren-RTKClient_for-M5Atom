@@ -21,6 +21,7 @@
 
 #include "Config.h"
 
+int read_roop = 256;
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const uint16_t hokuren_port = HOKUREN_PORT;
@@ -29,11 +30,7 @@ String  hokuren_password = HOKUREN_PASSWORD;
 const char* hokuren_server = HOKUREN_SERVER;
 const uint16_t hokuren_loginport = HOKUREN_LOGINPORT;
 String hokuren_version = HOKUREN_VERSION;
-// Set the name and password of the wifi to be connected.
-// 配置所连接wifi的名称和密码
-/* const char *ssid     = "";
-const char *password = "chaylan22";
-*/
+
 WiFiMulti WiFiMulti;
 
 
@@ -81,15 +78,16 @@ void loop() {
             hokuren_server,
             hokuren_port)) {  
         Serial.println("Data Connection failed.");
-        delay(5000);
+        //delay(5000);
+        delay(3000);
         return;
     }
     client.print(hokuren_userid+","+hokuren_port+",NORMAL\\"); 
     
-    int maxloops = 1600;
-    while (!client.available() && maxloops < 1700) {
+    int maxloops = 0;
+    while (!client.available() && maxloops < read_roop) {
         maxloops++;
-        delay(1);  
+        delay(1);
     }
     
     while (client.available() > 0 ){
