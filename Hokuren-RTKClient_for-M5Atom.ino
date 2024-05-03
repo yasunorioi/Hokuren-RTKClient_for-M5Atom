@@ -66,8 +66,8 @@ void loop() {
     }
     client.print(hokuren_userid+","+hokuren_port+",NORMAL\\"); 
     
-    int maxloops = 1600;
-    while (!client.available() && maxloops < 1700) {
+    int maxloops = 0;
+    while (!client.available() && maxloops < 1460) {
         maxloops++;
         delay(1);  
     }
