@@ -1,10 +1,12 @@
-# Hokuren-RTKClient_for-M5Atom
+* Hardware
+M5Atom + RS-232kit
+* Hokuren-RTKClient_for-M5Atom
 
-# Download zip
+* Download zip
 
-# unzip 
+* unzip 
 
-# make to Config.h
+* make to Config.h
 
 ```
 #pragma once
@@ -19,4 +21,4 @@
 #define HOKUREN_VERSION "4.11"
 ```
 
-# uploading M5Atom!
+* uploading M5Atom!
