@@ -21,7 +21,7 @@
 
 #include "Config.h"
 
-int read_roop = 256;
+int read_roop = 1460;
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const uint16_t hokuren_port = HOKUREN_PORT;
