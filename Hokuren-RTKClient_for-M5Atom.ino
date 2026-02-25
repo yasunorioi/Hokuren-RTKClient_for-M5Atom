@@ -17,6 +17,7 @@ String hokuren_version = HOKUREN_VERSION;
 int loop_num =1460;
 
 WiFiMulti WiFiMulti;
+WiFiClient client;
 
 int count=0;
 int login=0;
@@ -38,11 +39,8 @@ void setup() {
     Serial.println("\nWiFi connected");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());  
-    delay(500);    
-}
-
-void loop() {
-  WiFiClient client;
+    delay(500);
+      
   if (login == 0){
     String login_line;
     login_line = "login,"+hokuren_userid+","+hokuren_password+","+hokuren_version;
@@ -87,8 +85,12 @@ void loop() {
       }
     }
     */
+}
+
+void loop() {
+
     Serial2.flush();
-    client.stop();
+    //client.stop();
  
     Serial.println(count);
     count++;
