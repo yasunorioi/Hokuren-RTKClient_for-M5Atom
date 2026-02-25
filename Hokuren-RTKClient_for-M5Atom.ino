@@ -10,89 +10,115 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const uint16_t hokuren_port = HOKUREN_PORT;
 String hokuren_userid = HOKUREN_USERID;
-String  hokuren_password = HOKUREN_PASSWORD;
+String hokuren_password = HOKUREN_PASSWORD;
 const char* hokuren_server = HOKUREN_SERVER;
 const uint16_t hokuren_loginport = HOKUREN_LOGINPORT;
 String hokuren_version = HOKUREN_VERSION;
-int loop_num =1460;
 
 WiFiMulti WiFiMulti;
 WiFiClient client;
 
-int count=0;
-int login=0;
-uint8_t recv_index = 0x12;
+bool connected = false;
+
+// ログイン(ポート7001)→データポート接続の一連の手順
+bool connectToRTK() {
+    // Step 1: ログインポートに接続してログイン
+    WiFiClient loginClient;
+    Serial.println("[RTK] Connecting to login port " + String(hokuren_loginport) + "...");
+    if (!loginClient.connect(hokuren_server, hokuren_loginport)) {
+        Serial.println("[RTK] Login connection failed.");
+        return false;
+    }
+    String login_line = "login," + hokuren_userid + "," + hokuren_password + "," + hokuren_version;
+    loginClient.print(login_line);
+    String response = loginClient.readStringUntil('\r');
+    Serial.println("[RTK] Login response: " + response);
+    loginClient.stop();
+    delay(200);
+
+    // Step 2: データポートに接続
+    Serial.println("[RTK] Connecting to data port " + String(hokuren_port) + "...");
+    if (!client.connect(hokuren_server, hokuren_port)) {
+        Serial.println("[RTK] Data connection failed.");
+        return false;
+    }
+    client.print(hokuren_userid + "," + hokuren_port + ",NORMAL\\");
+    Serial.println("[RTK] Data connection established.");
+    return true;
+}
+
+// WiFi切断時に再接続（ブロッキング）
+void ensureWiFi() {
+    if (WiFiMulti.run() == WL_CONNECTED) return;
+    Serial.println("[WiFi] Connection lost. Reconnecting...");
+    M5.dis.fillpix(0xff0000);  // 赤: 未接続
+    connected = false;
+    client.stop();
+    while (WiFiMulti.run() != WL_CONNECTED) {
+        Serial.print(".");
+        delay(500);
+    }
+    Serial.println("\n[WiFi] Reconnected. IP: " + WiFi.localIP().toString());
+}
+
 void setup() {
-    M5.begin(true, false, true);  
+    M5.begin(true, false, true);
     Serial2.begin(115200, SERIAL_8N1, 22, 19);
-    pinMode(0,OUTPUT);
-    digitalWrite(0,LOW);
-    
-    WiFiMulti.addAP( ssid, password);  
-    Serial.print( "\nWaiting connect to WiFi...");  
-    M5.dis.fillpix(0xff0000);  
-    while (WiFiMulti.run() !=  WL_CONNECTED) {  
+    pinMode(0, OUTPUT);
+    digitalWrite(0, LOW);
+
+    M5.dis.fillpix(0xff0000);  // 赤: 未接続
+
+    WiFiMulti.addAP(ssid, password);
+    Serial.print("\n[WiFi] Connecting...");
+    while (WiFiMulti.run() != WL_CONNECTED) {
         Serial.print(".");
         delay(300);
     }
-    M5.dis.fillpix(0x00ff00);  
-    Serial.println("\nWiFi connected");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());  
+    Serial.println("\n[WiFi] Connected. IP: " + WiFi.localIP().toString());
+
+    M5.dis.fillpix(0xffff00);  // 黄: RTK接続中
     delay(500);
-      
-  if (login == 0){
-    String login_line;
-    login_line = "login,"+hokuren_userid+","+hokuren_password+","+hokuren_version;
-    if(!client.connect(hokuren_server,hokuren_loginport)){
-      Serial.println("Server Connect faled.");
-      return;
+
+    if (connectToRTK()) {
+        connected = true;
+        M5.dis.fillpix(0x00ff00);  // 緑: 接続完了
+    } else {
+        M5.dis.fillpix(0xff0000);  // 赤: 接続失敗（loop()でリトライ）
     }
-    client.print(login_line);
-    String line = client.readStringUntil ('\r');
-    Serial.println(line);
-    client.stop();
-    login++;
-    String login_message = client.readStringUntil('\r');
-    Serial.println(login_message);
-  }
-    if (!client.connect(
-            hokuren_server,
-            hokuren_port)) {  
-        Serial.println("Data Connection failed.");
-        delay(5000);
-        return;
-    }
-    client.print(hokuren_userid+","+hokuren_port+",NORMAL\\"); 
-    
-    int maxloops = 0;
-    while (!client.available() && maxloops < loop_num) {
-        maxloops++;
-        delay(1);  
-    }
-    
-    while (client.available() > 0 ){
-      String c = client.readStringUntil('\r');
-      Serial2.print(c);
-    }
-/*    size_t RTCM_Count = 0;
-    uint8_t RTCM_Data[512 *4];
-    while ( client.avalable()) {
-      RTCM_Data[RTCM_Count++] = client.read();
-      if (RTCM_Count == sizeof(RTCM_Data)){
-        RTCM_Count = 0;
-        break;
-      }
-    }
-    */
 }
 
 void loop() {
+    M5.update();
 
-    Serial2.flush();
-    //client.stop();
- 
-    Serial.println(count);
-    count++;
-    //delay(1000);
+    // 1. WiFi接続を確保
+    ensureWiFi();
+
+    // 2. RTKデータポート切断時はログインから再接続
+    if (!client.connected()) {
+        connected = false;
+        M5.dis.fillpix(0xffff00);  // 黄: 再接続中
+        client.stop();
+        Serial.println("[RTK] Disconnected. Retrying...");
+        delay(2000);
+        if (connectToRTK()) {
+            connected = true;
+            M5.dis.fillpix(0x00ff00);  // 緑: 再接続完了
+        } else {
+            M5.dis.fillpix(0xff0000);  // 赤: 接続失敗
+            delay(3000);
+            return;
+        }
+    }
+
+    // 3. 受信データをSerial2に転送（持続受信ループ）
+    if (client.available() > 0) {
+        M5.dis.fillpix(0x0000ff);  // 青: データ受信中
+        while (client.available() > 0) {
+            Serial2.write(client.read());
+        }
+        M5.dis.fillpix(0x00ff00);  // 緑: 受信完了、接続維持中
+    }
+
+    delay(10);
 }
